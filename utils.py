@@ -148,6 +148,7 @@ def beam_search_decode(model, src, src_mask, max_len, start_symbol, beam_size, e
         token_ind = torch.remainder(indices, vocab_size)
         # update ys
         a, b = ys.size()
+        print("ys size", a, b)
         next_ys = torch.zeros([a,b+1], dtype=torch.int64).cuda()
         i = 0
         for beam_id, token_id in zip(beam_ind, token_ind):
