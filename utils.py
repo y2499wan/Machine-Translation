@@ -150,8 +150,9 @@ def beam_search_decode(model, src, src_mask, max_len, start_symbol, beam_size, e
         beam_ind = torch.div(indices, vocab_size, rounding_mode="floor")
         token_ind = torch.remainder(indices, vocab_size)
         # update ys
-        next_ys = torch.zeros(size=[beam_size,i+2], dtype=torch.int64).cuda()
+        # next_ys = torch.zeros(size=[beam_size,i+2], dtype=torch.int64).cuda()
         k = 0
+        next_ys = []
         for beam_id, token_id in zip(beam_ind, token_ind):
             print("beam_id issssssssssssssssss", beam_id, token_id)
             prev_ys = ys[beam_id,:]
@@ -159,9 +160,10 @@ def beam_search_decode(model, src, src_mask, max_len, start_symbol, beam_size, e
             if prev_ys[-1] == end_idx:
                 token_id = end_idx
             print(prev_ys.size())
-            next_ys[k,:] = torch.cat((prev_ys, torch.zeros(1).type_as(src.data).fill_(token_id)))
+            # next_ys[k,:] = torch.cat((prev_ys, torch.zeros(1).type_as(src.data).fill_(token_id)))
+            next_ys.append(torch.cat((prev_ys, torch.zeros(1).type_as(src.data).fill_(token_id))))
             k += 1
-        ys = next_ys
+        ys = torch.vstack(next_ys)
         print("--------------------------------------")
         print(ys)
         print(ys.size())
