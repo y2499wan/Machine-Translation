@@ -124,7 +124,7 @@ def beam_search_decode(model, src, src_mask, max_len, start_symbol, beam_size, e
     
     # We will use this to store log_prob of the sequences so far
     scores = torch.Tensor([0.]).cuda()
-    
+    scores = scores.unsqueeze(-1)
     for i in range(max_len - 1):
         
         # Compute the output using the decoder
@@ -134,12 +134,13 @@ def beam_search_decode(model, src, src_mask, max_len, start_symbol, beam_size, e
         
         # Compute the log_prob for the next token
         prob = model.generator(out[:,-1])
+        print("prob size 9999999999999999999999999", prob.size())
         vocab_size = prob.shape[-1]
         
         # For sequences which have finished, set log_prob to zero
         prob[ys[:,-1] == end_idx,:] = 0
         # 1. Combine the log_prob of next token with our scores so far.
-        scores = scores.unsqueeze(-1) + prob
+        scores = scores + prob
         # 2. Use these scores to construct variable ys, which is the best beam_size number of sequences so far.
         values, indices = torch.topk(scores.reshape(-1), beam_size)
         print(values, indices)
