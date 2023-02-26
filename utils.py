@@ -150,7 +150,7 @@ def beam_search_decode(model, src, src_mask, max_len, start_symbol, beam_size, e
         next_ys = torch.zeros(size=[beam_size,i+2], dtype=torch.int64).cuda()
         k = 0
         for beam_id, token_id in zip(beam_ind, token_ind):
-
+            print("beam_id issssssssssssssssss", beam_id, token_id)
             prev_ys = ys[beam_id,:]
             print("prev_ys size", prev_ys.size())
             if prev_ys[-1] == end_idx:
