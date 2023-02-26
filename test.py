@@ -104,6 +104,11 @@ def test_beam_search():
         valid_dataloader, model, vocab_src, vocab_tgt, beam_search=True, beam_size=1, verbose=False, max_iter=5
     )
     
+    print("results_beam", results_beam)
+    print("with score", score)
+    print("**********************************************8")
+    print(results_greedy, score)
+    
     match = True
     for k in range(5):
         if results_greedy[k][-1] != results_beam[k][-1]:
