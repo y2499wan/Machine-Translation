@@ -128,7 +128,6 @@ def beam_search_decode(model, src, src_mask, max_len, start_symbol, beam_size, e
     for i in range(max_len - 1):
         
         # Compute the output using the decoder
-        print("src mask", src_mask.size())
         out = model.decode(
             memory, src_mask, ys, subsequent_mask(ys.size(1)).type_as(src.data)
         )
@@ -139,11 +138,12 @@ def beam_search_decode(model, src, src_mask, max_len, start_symbol, beam_size, e
         
         # For sequences which have finished, set log_prob to zero
         prob[ys[:,-1] == end_idx,:] = 0
-        print(prob)
         # 1. Combine the log_prob of next token with our scores so far.
         scores = scores.unsqueeze(-1) + prob
         # 2. Use these scores to construct variable ys, which is the best beam_size number of sequences so far.
         values, indices = torch.topk(scores.reshape(-1), beam_size)
+        print(values, indices)
+        print("size of values=======================", values.size())
         beam_ind = torch.div(indices, vocab_size, rounding_mode="floor")
         token_ind = torch.remainder(indices, vocab_size)
         # update ys
