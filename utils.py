@@ -124,49 +124,48 @@ def beam_search_decode(model, src, src_mask, max_len, start_symbol, beam_size, e
     
     # We will use this to store log_prob of the sequences so far
     scores = torch.Tensor([0.]).cuda()
-    scores = scores.unsqueeze(-1)
     for i in range(max_len - 1):
         
         # Compute the output using the decoder
-        out = model.decode(
-            memory, src_mask, ys, subsequent_mask(ys.size(1)).type_as(src.data)
-        )
+        # print("src mask", src_mask.size())
+        if i == 0:
+            out = model.decode(
+                memory, src_mask, ys, subsequent_mask(ys.size(1)).type_as(src.data)
+            )
+        else:
+            out = model.decode(
+                memory, src_mask, ys, subsequent_mask(ys.size(1)).type_as(src.data).repeat(beam_size, 1, 1)
+            )
         
         # Compute the log_prob for the next token
         prob = model.generator(out[:,-1])
-        
         vocab_size = prob.shape[-1]
         
         # For sequences which have finished, set log_prob to zero
         prob[ys[:,-1] == end_idx,:] = 0
+        # print(prob)
         # 1. Combine the log_prob of next token with our scores so far.
-        print("scores size 9999999999999999999999999", scores.size())
-        print("prob size 9999999999999999999999999", prob.size())
-        scores = scores + prob
+        scores =  scores.unsqueeze(-1) + prob
         # 2. Use these scores to construct variable ys, which is the best beam_size number of sequences so far.
-        values, indices = torch.topk(scores.reshape(-1), beam_size)
-        print(values, indices)
-        print("size of values=======================", values.size())
+        scores, indices = torch.topk(scores.reshape(-1), beam_size)
         beam_ind = torch.div(indices, vocab_size, rounding_mode="floor")
         token_ind = torch.remainder(indices, vocab_size)
         # update ys
-        # next_ys = torch.zeros(size=[beam_size,i+2], dtype=torch.int64).cuda()
+        next_ys = torch.zeros(size=[beam_size,i+2], dtype=torch.int64).cuda()
         k = 0
-        next_ys = []
         for beam_id, token_id in zip(beam_ind, token_ind):
-            print("beam_id issssssssssssssssss", beam_id, token_id)
+
             prev_ys = ys[beam_id,:]
-            print("prev_ys size", prev_ys.size())
+            # print("prev_ys size", prev_ys.size())
             if prev_ys[-1] == end_idx:
                 token_id = end_idx
-            print(prev_ys.size())
-            # next_ys[k,:] = torch.cat((prev_ys, torch.zeros(1).type_as(src.data).fill_(token_id)))
-            next_ys.append(torch.cat((prev_ys, torch.zeros(1).type_as(src.data).fill_(token_id))))
+            # print(prev_ys.size())
+            next_ys[k,:] = torch.cat((prev_ys, torch.zeros(1).type_as(src.data).fill_(token_id)), dim=-1)
             k += 1
-        ys = torch.vstack(next_ys)
-        print("--------------------------------------")
-        print(ys)
-        print(ys.size())
+        ys = next_ys
+        # print("--------------------------------------")
+        # print(ys)
+        # print(ys.size())
         # Your main task is
         
         # 1. Combine the log_prob of next token with our scores so far.
@@ -200,6 +199,8 @@ def beam_search_decode(model, src, src_mask, max_len, start_symbol, beam_size, e
             src_mask = src_mask.expand(beam_size, *src_mask.shape[1:])
     
     # convert the top scored sequence to a list of text tokens
+    # print("ys_size[[[[[[[[[[[[[[[[[[[[[[[[[[[[", ys.size())
+    # print(scores.size())
     ys, _ = max(zip(ys, scores), key=lambda x: x[1])
     ys = ys.unsqueeze(0)
     
