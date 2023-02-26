@@ -128,6 +128,7 @@ def beam_search_decode(model, src, src_mask, max_len, start_symbol, beam_size, e
     for i in range(max_len - 1):
         
         # Compute the output using the decoder
+        print("src mask", src_mask.size())
         out = model.decode(
             memory, src_mask, ys, subsequent_mask(ys.size(1)).type_as(src.data)
         )
@@ -138,8 +139,7 @@ def beam_search_decode(model, src, src_mask, max_len, start_symbol, beam_size, e
         
         # For sequences which have finished, set log_prob to zero
         prob[ys[:,-1] == end_idx,:] = 0
-        print(scores.size())
-        print(prob.size())
+        print(prob)
         # 1. Combine the log_prob of next token with our scores so far.
         scores = scores.unsqueeze(-1) + prob
         # 2. Use these scores to construct variable ys, which is the best beam_size number of sequences so far.
@@ -147,18 +147,21 @@ def beam_search_decode(model, src, src_mask, max_len, start_symbol, beam_size, e
         beam_ind = torch.div(indices, vocab_size, rounding_mode="floor")
         token_ind = torch.remainder(indices, vocab_size)
         # update ys
-        a, b = ys.size()
-        print("ys size", a, b)
-        next_ys = torch.zeros([a,b+1], dtype=torch.int64).cuda()
-        i = 0
+        next_ys = torch.zeros(size=[beam_size,i+2], dtype=torch.int64) #.cuda()
+        k = 0
         for beam_id, token_id in zip(beam_ind, token_ind):
+
             prev_ys = ys[beam_id,:]
+            print("prev_ys size", prev_ys.size())
             if prev_ys[-1] == end_idx:
                 token_id = end_idx
-            token_id = torch.tensor([token_id], dtype=torch.int64).cuda()
-            next_ys[i] = torch.cat((prev_ys, token_id), -1)
-            i += 1
+            print(prev_ys.size())
+            next_ys[k,:] = torch.cat((prev_ys, torch.zeros(1).type_as(src.data).fill_(token_id)))
+            k += 1
         ys = next_ys
+        print("--------------------------------------")
+        print(ys)
+        print(ys.size())
         # Your main task is
         
         # 1. Combine the log_prob of next token with our scores so far.
